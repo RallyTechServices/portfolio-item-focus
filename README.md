@@ -1,4 +1,4 @@
-# portfolio-item-self-sufficiency
+# portfolio-item-focus
 
 ## Summary/Description
 
