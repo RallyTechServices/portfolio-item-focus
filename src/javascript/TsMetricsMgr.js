@@ -44,6 +44,9 @@ Ext.define('TsMetricsMgr', function() {
         var store = Ext.create('Rally.data.wsapi.Store', {
             model: 'Project',
             fetch: ['ObjectID'],
+            context: {
+                project: null
+            },
             limit: Infinity,
             autoLoad: false,
             filters: Rally.data.wsapi.Filter.or(queries),
