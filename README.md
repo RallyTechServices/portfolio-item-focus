@@ -15,6 +15,14 @@ compared with portfolio items that are owned by other projects.
 The minimum desired threshold can be configured using an app setting.
 By default this is 80%.
 
+This app assumes the following Portfolio Item Hierarchy and will break if Portfolio
+Item Types are renamed, added or removed.
+* Feature (lowest level)
+* Epic
+* Initiative
+* Theme
+* Group (highest level)
+
 ## Version History
 * 1.0.0 - Initial Version
 
