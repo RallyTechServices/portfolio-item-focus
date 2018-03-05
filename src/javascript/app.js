@@ -108,7 +108,6 @@ Ext.define("CArABU.app.TSApp", {
             this.typePathMap[typePath] = parentStr;
             parentStr += '.Parent';
         }
-        console.log(this.typePathMap);
     },
 
     onPiTypeChange: function(control) {
