@@ -17,6 +17,8 @@ By default this is 80%.
 
 ## Version History
 * 1.0.0 - Initial Version
+* 1.0.1 - Make portfolio item types dynamic so app won't break if PI names or types are changed
+in the future
 
 ### First Load
 

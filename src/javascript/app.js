@@ -53,6 +53,10 @@ Ext.define("CArABU.app.TSApp", {
             WARNING_THRESHOLD: 80
         }
     },
+    
+    selectedProject: undefined,
+    selectedPiType: undefined,
+    availablePiTypes: [],
 
     launch: function() {
         this.down('#resultPanel').insert(0, {
@@ -65,7 +69,7 @@ Ext.define("CArABU.app.TSApp", {
             listeners: {
                 scope: this,
                 change: this.onPiTypeChange,
-                ready: this.onPiTypeChange,
+                ready: this.onPiTypeReady,
             }
         });
 
@@ -81,6 +85,30 @@ Ext.define("CArABU.app.TSApp", {
             this.selectedProject = newValue;
             this.updateMetrics();
         }
+    },
+    
+    onPiTypeReady: function(control) {
+        // Build a map of pi types to the string needed to access that PI type
+        // from a user story.  This allows pi types to be renamed or reordered
+        // without breaking this app. For example:
+        /*
+            {
+                'PortfolioItem/Feature': 'Feature',
+                'PortfolioItem/Epic': 'Feature.Parent',
+                'PortfolioItem/Initiative': 'Feature.Parent.Parent',
+                'PortfolioItem/Theme': 'Feature.Parent.Parent.Parent',
+                'PortfolioItem/Group': 'Feature.Parent.Parent.Parent.Parent',
+            }
+        */
+        var availablePiTypes = control.getStore().getRange();
+        var parentStr = 'Feature';
+        this.typePathMap = {};
+        for ( var i = availablePiTypes.length; i--; i>=0 ) {
+            var typePath = availablePiTypes[i].get('TypePath');
+            this.typePathMap[typePath] = parentStr;
+            parentStr += '.Parent';
+        }
+        console.log(this.typePathMap);
     },
 
     onPiTypeChange: function(control) {

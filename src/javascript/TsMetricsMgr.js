@@ -82,14 +82,8 @@ Ext.define('TsMetricsMgr', function() {
     }
 
     function getStoriesFromPisNotInProjects(projectOids, piTypePath) {
-        // TODO make dynamic
-        var typePathMap = {
-            'PortfolioItem/Feature': 'Feature',
-            'PortfolioItem/Epic': 'Feature.Parent',
-            'PortfolioItem/Initiative': 'Feature.Parent.Parent',
-            'PortfolioItem/Theme': 'Feature.Parent.Parent.Parent',
-            'PortfolioItem/Group': 'Feature.Parent.Parent.Parent.Parent',
-        };
+        
+        var typePathMap = Rally.getApp().typePathMap;
 
         // Only leaf stories
         var childrenFilter = new Rally.data.wsapi.Filter({
