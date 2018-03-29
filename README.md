@@ -17,12 +17,6 @@ of stories inside or outside of the project tree is also shown.
 The minimum desired threshold can be configured using an app setting.
 By default this is 80%.
 
-## Version History
-* 1.0.0 - Initial Version
-* 1.0.1 - Make portfolio item types dynamic so app won't break if PI names or types are changed
-in the future
-* 1.0.2 - Show detailed list of stories inside/outside project tree
-
 ### First Load
 
 If you've just downloaded this from github and you want to do development,

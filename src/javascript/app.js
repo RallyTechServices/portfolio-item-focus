@@ -26,16 +26,13 @@ Ext.define("CArABU.app.TSApp", {
             xtype: 'panel',
             region: 'center',
             itemId: TsConstants.ID.RESULTS_AREA,
+            autoScroll: true,
             items: [{
                 xtype: 'panel',
                 itemId: TsConstants.ID.SELECT_PI_TYPE_CONTROL
             }, {
                 xtype: 'tabpanel',
-                flex: 1,
-                layout: {
-                    type: 'vbox',
-                    align: 'stretch',
-                },
+                itemId: 'tabpanel',
                 items: [{
                     xtype: 'panel',
                     itemId: TsConstants.ID.SUMMARY_PANEL,
@@ -178,7 +175,10 @@ Ext.define("CArABU.app.TSApp", {
     addDetails: function(record) {
         var detailsArea = this.down('#' + TsConstants.ID.DETAILS_PANEL);
         detailsArea.removeAll();
-        var self = this;
+        var appHeight = this.getHeight();
+        var typePickerHeight = this.down('#' + TsConstants.ID.SELECT_PI_TYPE_CONTROL).getHeight();
+        // Workaround because rallytreegrid has zero height without explicit height setting
+        var gridHeight = (appHeight - typePickerHeight - 80) / 2;
 
         // Add the grid of outside stories
         Ext.create('Rally.data.wsapi.TreeStoreBuilder').build({
@@ -196,15 +196,10 @@ Ext.define("CArABU.app.TSApp", {
                 detailsArea.add({
                     xtype: 'panel',
                     collapsible: true,
-                    layout: {
-                        type: 'vbox',
-                        align: 'stretch',
-                        padding: '0 5 5 5',
-                    },
                     title: TsConstants.LABEL.OUTSIDE_PROJECT + ' (' + record.get('OutsideStoryCount') + ')',
                     items: [{
                         xtype: 'rallygridboard',
-                        height: self.getHeight() / 3,
+                        height: gridHeight,
                         stateful: true,
                         stateId: TsConstants.ID.OUTSIDE_STORY_GRID,
                         gridConfig: {
@@ -246,15 +241,10 @@ Ext.define("CArABU.app.TSApp", {
                 detailsArea.add({
                     xtype: 'panel',
                     collapsible: true,
-                    layout: {
-                        type: 'vbox',
-                        align: 'stretch',
-                        padding: '0 5 5 5',
-                    },
                     title: TsConstants.LABEL.INSIDE_PROJECT + ' (' + record.get('InsideStoryCount') + ')',
                     items: [{
                         xtype: 'rallygridboard',
-                        height: self.getHeight() / 3,
+                        height: gridHeight,
                         stateful: true,
                         stateId: TsConstants.ID.INSIDE_STORY_GRID,
                         gridConfig: {
