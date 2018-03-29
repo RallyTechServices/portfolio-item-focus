@@ -1,6 +1,5 @@
 /* global Ext _ Rally TsConstants Deft TsUtils TsPiFocus */
 Ext.define('TsMetricsMgr', function() {
-    var storyFields = ['ObjectID', 'PlanEstimate'];
 
     return {
         statics: {
@@ -8,6 +7,10 @@ Ext.define('TsMetricsMgr', function() {
         }
     }
 
+    /**
+     * Get stories assigned to PIs at the given piTypePath level
+     * where the PI belongs to a project outside vs inside of the selected project tree.
+     */
     function updateFocus(project, piType) {
         if (project) {
             var projectOid = project.get('ObjectID');
@@ -17,16 +20,40 @@ Ext.define('TsMetricsMgr', function() {
                     var projectOids = _.map(projects, function(item) {
                         return item.get('ObjectID');
                     });
+                    var insideStoriesFilter = getLeafStoriesFilter()
+                        .and(getProjectsFilter(projectOids, true))
+                        .and(getPiFilter(projectOids, piTypePath, true));
+                    var outsideStoriesFilter = getLeafStoriesFilter()
+                        .and(getProjectsFilter(projectOids, true))
+                        .and(getPiFilter(projectOids, piTypePath, false));
                     return Deft.Promise.all(
                         [
-                            getAllLeafStories(projectOids),
-                            getStoriesFromPisNotInProjects(projectOids, piTypePath)
-                        ]);
-                }).then(function(result) {
-                    var allStories = result[0];
-                    var storiesFromPisNotInProjects = result[1];
-                    var metrics = getMetrics(allStories, storiesFromPisNotInProjects);
-                    TsUtils.updateRecord(project, metrics, TsPiFocus);
+                            loadStories(insideStoriesFilter),
+                            loadStories(outsideStoriesFilter),
+                        ]).then(function(results) {
+                        var insideStories = results[0];
+                        var outsideStories = results[1];
+
+                        var insideCount = insideStories.length;
+                        var insidePoints = _.reduce(insideStories, function(accumulator, story) {
+                            return accumulator += story.get('PlanEstimate');
+                        }, 0);
+
+                        var outsideCount = outsideStories.length;
+                        var outsidePoints = _.reduce(outsideStories, function(accumulator, story) {
+                            return accumulator += story.get('PlanEstimate');
+                        }, 0);
+
+                        var metrics = Ext.create('TsPiFocus', {
+                            InsideStoriesFilter: insideStoriesFilter,
+                            OutsideStoriesFilter: outsideStoriesFilter,
+                            OutsideStoryCount: outsideCount,
+                            OutsideStoryPoints: outsidePoints,
+                            InsideStoryCount: insideCount,
+                            InsideStoryPoints: insidePoints,
+                        });
+                        TsUtils.updateRecord(project, metrics, TsPiFocus);
+                    });
                 });
         }
     }
@@ -55,92 +82,94 @@ Ext.define('TsMetricsMgr', function() {
         return store.load();
     }
 
-    function getAllLeafStories(projectOids) {
-        var projectQueries = _.map(projectOids, function(oid) {
-            return {
-                property: 'Project.ObjectID',
-                value: oid
-            }
-        });
-        var projectFilter = Rally.data.wsapi.Filter.or(projectQueries);
-        var childrenFilter = new Rally.data.wsapi.Filter({
+    function getLeafStoriesFilter() {
+        return new Rally.data.wsapi.Filter({
             property: 'DirectChildrenCount',
             value: 0
         });
-
-        var store = Ext.create('Rally.data.wsapi.Store', {
-            model: 'HierarchicalRequirement',
-            context: {
-                project: null
-            },
-            fetch: storyFields,
-            limit: Infinity,
-            autoLoad: true,
-            filters: childrenFilter.and(projectFilter)
-        });
-        return store.load();
     }
 
-    function getStoriesFromPisNotInProjects(projectOids, piTypePath) {
-        
-        var typePathMap = Rally.getApp().typePathMap;
-
-        // Only leaf stories
-        var childrenFilter = new Rally.data.wsapi.Filter({
-            property: 'DirectChildrenCount',
-            value: 0
-        });
-
-        // Only stories in any of these projects
-        var projectQueries = _.map(projectOids, function(oid) {
+    /**
+     * @param projectOids leaf stories under one of these projects
+     * @param inProjects (boolean) true for stories in one of the projects, false for stories NOT in one of the projects
+     */
+    function getProjectsFilter(projectOids, inProjects) {
+        var result;
+        var queries = _.map(projectOids, function(oid) {
             return {
                 property: 'Project.ObjectID',
+                operator: inProjects ? '=' : '!=',
                 value: oid
             }
         });
-        var projectFilter = Rally.data.wsapi.Filter.or(projectQueries);
+        if (inProjects) {
+            result = Rally.data.wsapi.Filter.or(queries);
+        }
+        else {
+            result = Rally.data.wsapi.Filter.and(queries);
+        }
+        return result;
+    }
 
-        // Only stories descendent from a PI that is NOT owned by any of these projects
-        var piQueries = _.map(projectOids, function(oid) {
+    // Only stories descendent from a PI that is owned (or now) by any of these projects
+    function getPiFilter(projectOids, piTypePath, inProjects) {
+        var result;
+        var typePathMap = Rally.getApp().typePathMap;
+        var queries = _.map(projectOids, function(oid) {
             return {
                 property: typePathMap[piTypePath] + '.Project.ObjectID',
-                operator: '!=',
+                operator: inProjects ? '=' : '!=',
                 value: oid
             }
         });
-        var piFilter = Rally.data.wsapi.Filter.and(piQueries);
+        if (inProjects) {
+            result = Rally.data.wsapi.Filter.or(queries);
+        }
+        else {
+            result = Rally.data.wsapi.Filter.and(queries);
+        }
+        return result;
+    }
 
-        var store = Ext.create('Rally.data.wsapi.Store', {
+    function loadStories(filters) {
+        return Ext.create('Rally.data.wsapi.TreeStoreBuilder').build({
             model: 'HierarchicalRequirement',
             context: {
                 project: null
             },
-            fetch: storyFields,
-            limit: Infinity,
-            autoLoad: true,
-            filters: childrenFilter.and(projectFilter).and(piFilter)
-        });
-        return store.load();
-    }
-
-    function getMetrics(allStories, storiesFromPisNotInProjects) {
-        var totalPoints = _.reduce(allStories, function(accumulator, story) {
-            accumulator += story.get('PlanEstimate');
-            return accumulator;
-        }, 0);
-
-        var pisNotInProjectPoints = _.reduce(storiesFromPisNotInProjects, function(accumulator, story) {
-            accumulator += story.get('PlanEstimate');
-            return accumulator;
-        }, 0);
-
-        return Ext.create('TsPiFocus', {
-            TotalStoryCount: allStories.length,
-            TotalPoints: totalPoints,
-            PisNotInProjectStoryCount: storiesFromPisNotInProjects.length,
-            PisNotInProjectStoryPoints: pisNotInProjectPoints,
-
+            fetch: TsConstants.FETCH.USER_STORY,
+            autoLoad: false,
+            enableHierarchy: false,
+            filters: filters,
+            enableRootLevelPostGet: true,
+        }).then(function(store) {
+            return loadAllData(store);
         });
     }
 
+    /**
+     * Given a tree store, load ALL of the data into an array and return the array.
+     * By default, the tree store will only load the current page at a time.
+     * 
+     * @returns A promise that resolves with all the data (instead of just a page worth)
+     */
+    function loadAllData(store, accumulator) {
+        if (!accumulator) {
+            accumulator = [];
+        }
+
+        return store.load().then(function(results) {
+            accumulator = accumulator.concat(results);
+            var totalCount = store.getTotalCount();
+            var loadedCount = accumulator.length;
+            if (loadedCount < totalCount) {
+                store._setCurrentPage(store.currentPage + 1);
+                return loadAllData(store, accumulator);
+            }
+            else {
+                store._setCurrentPage(1);
+                return accumulator;
+            }
+        });
+    }
 });

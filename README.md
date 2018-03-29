@@ -2,7 +2,8 @@
 
 ## Summary/Description
 
-![screenshot](./images/screenshot.png "This is an example")
+![Summary View](./images/summary.png "Summary View Example")
+![Details View](./images/details.png "Details View Example")
 
 This app attempts to show how much of a project's work belongs to portfolio items
 that it doesn't control.
@@ -10,23 +11,17 @@ that it doesn't control.
 The app fetches all leaf stories belonging to projects in the selected project 
 or its child projects.  It then charts the percentage of those stories that decended
 from portfolio items that are owned by the selected project (or its child projects)
-compared with portfolio items that are owned by other projects.
+compared with portfolio items that are owned by other projects. The detailed lists
+of stories inside or outside of the project tree is also shown.
 
 The minimum desired threshold can be configured using an app setting.
 By default this is 80%.
-
-This app assumes the following Portfolio Item Hierarchy and will break if Portfolio
-Item Types are renamed, added or removed.
-* Feature (lowest level)
-* Epic
-* Initiative
-* Theme
-* Group (highest level)
 
 ## Version History
 * 1.0.0 - Initial Version
 * 1.0.1 - Make portfolio item types dynamic so app won't break if PI names or types are changed
 in the future
+* 1.0.2 - Show detailed list of stories inside/outside project tree
 
 ### First Load
 

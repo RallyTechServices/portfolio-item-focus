@@ -2,9 +2,11 @@
 Ext.define('TsPiFocus', {
     extend: 'Ext.data.Model',
     fields: [
-        { name: 'TotalStoryCount', type: 'int', defaultValue: 0 },
-        { name: 'TotalPoints', type: 'int', defaultValue: 0 },
-        { name: 'PisNotInProjectStoryCount', type: 'int', defaultValue: 0 },
-        { name: 'PisNotInProjectStoryPoints', type: 'int', defaultValue: 0 },
+        { name: 'InsideStoriesFilter', type: 'auto' },
+        { name: 'OutsideStoriesFilter', type: 'auto' },
+        { name: 'OutsideStoryCount', type: 'int', defaultValue: 0 },
+        { name: 'OutsideStoryPoints', type: 'int', defaultValue: 0 },
+        { name: 'InsideStoryCount', type: 'int', defaultValue: 0 },
+        { name: 'InsideStoryPoints', type: 'int', defaultValue: 0 },
     ]
 })

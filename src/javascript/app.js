@@ -24,28 +24,53 @@ Ext.define("CArABU.app.TSApp", {
         },
         {
             xtype: 'panel',
-            itemId: 'resultPanel',
-            title: TsConstants.LABEL.CHART_AREA_TITLE,
-            autoScroll: true,
-            layout: 'vbox',
             region: 'center',
-            items: [
-                // pi type selection control here,
-                {
-                    xtype: 'container',
-                    itemId: 'chartPanel',
+            itemId: TsConstants.ID.RESULTS_AREA,
+            items: [{
+                xtype: 'panel',
+                itemId: TsConstants.ID.SELECT_PI_TYPE_CONTROL
+            }, {
+                xtype: 'tabpanel',
+                flex: 1,
+                layout: {
+                    type: 'vbox',
+                    align: 'stretch',
+                },
+                items: [{
+                    xtype: 'panel',
+                    itemId: TsConstants.ID.SUMMARY_PANEL,
+                    title: TsConstants.LABEL.SUMMARY_PANEL,
+                    autoScroll: true,
                     layout: 'vbox',
                     items: [{
-                        xtype: 'container',
+                        xtype: 'panel',
                         itemId: 'selectLabel',
-                        padding: '100 20 20 20',
+                        padding: '20 20 20 20',
                         width: 200,
                         border: false,
                         html: TsConstants.LABEL.SELECT_ITEM
                     }],
-                }
-            ],
-        }
+                }, {
+                    xtype: 'panel',
+                    itemId: TsConstants.ID.DETAILS_PANEL,
+                    title: TsConstants.LABEL.DETAILS_PANEL,
+                    layout: {
+                        type: 'vbox',
+                        align: 'stretch'
+                    },
+                    autoScroll: true,
+                    items: [{
+                        xtype: 'panel',
+                        itemId: 'selectLabel',
+                        padding: '20 20 20 20',
+                        width: 200,
+                        border: false,
+                        html: TsConstants.LABEL.SELECT_ITEM
+                    }]
+                }],
+                region: 'center',
+            }, ]
+        },
     ],
 
     config: {
@@ -53,13 +78,13 @@ Ext.define("CArABU.app.TSApp", {
             WARNING_THRESHOLD: 80
         }
     },
-    
+
     selectedProject: undefined,
     selectedPiType: undefined,
     availablePiTypes: [],
 
     launch: function() {
-        this.down('#resultPanel').insert(0, {
+        this.down('#' + TsConstants.ID.SELECT_PI_TYPE_CONTROL).insert(0, {
             xtype: 'rallyportfolioitemtypecombobox',
             itemId: TsConstants.ID.SELECT_PI_TYPE_CONTROL,
             fieldLabel: TsConstants.LABEL.PI_TYPE,
@@ -86,7 +111,7 @@ Ext.define("CArABU.app.TSApp", {
             this.updateMetrics();
         }
     },
-    
+
     onPiTypeReady: function(control) {
         // Build a map of pi types to the string needed to access that PI type
         // from a user story.  This allows pi types to be renamed or reordered
@@ -103,7 +128,7 @@ Ext.define("CArABU.app.TSApp", {
         var availablePiTypes = control.getStore().getRange();
         var parentStr = 'Feature';
         this.typePathMap = {};
-        for ( var i = availablePiTypes.length; i--; i>=0 ) {
+        for (var i = availablePiTypes.length; i--; i >= 0) {
             var typePath = availablePiTypes[i].get('TypePath');
             this.typePathMap[typePath] = parentStr;
             parentStr += '.Parent';
@@ -116,33 +141,144 @@ Ext.define("CArABU.app.TSApp", {
     },
 
     updateMetrics: function() {
-        var chartPanel = this.down('#chartPanel');
+        var resultsArea = this.down('#' + TsConstants.ID.RESULTS_AREA);
+        var summaryArea = this.down('#' + TsConstants.ID.SUMMARY_PANEL);
+        var detailsArea = this.down('#' + TsConstants.ID.DETAILS_PANEL);
 
         if (this.selectedProject && this.selectedPiType) {
-            chartPanel.removeAll();
-            this.down('#resultPanel').setLoading(true);
+            summaryArea.removeAll();
+            detailsArea.removeAll();
+            resultsArea.setLoading(true);
+
             TsMetricsMgr.updateFocus(this.selectedProject, this.selectedPiType)
                 .then({
                     scope: this,
                     success: function(result) {
-                        this.drawCharts(this.selectedProject);
+                        this.addCharts(this.selectedProject);
+                        this.addDetails(this.selectedProject);
+                        resultsArea.setLoading(false);
                     }
                 });
         }
     },
 
-    drawCharts: function(record) {
-        var chartPanel = this.down('#chartPanel');
+    addCharts: function(record) {
+        var summaryArea = this.down('#' + TsConstants.ID.SUMMARY_PANEL);
+        summaryArea.removeAll();
 
-        var outsideProject = record.get('PisNotInProjectStoryCount');
-        var total = record.get('TotalStoryCount');
-        chartPanel.add(this.getChart(outsideProject, total, TsConstants.LABEL.BY_COUNT));
+        var outsideCount = record.get('OutsideStoryCount');
+        var insideCount = record.get('InsideStoryCount');
+        summaryArea.add(this.getChart(outsideCount, insideCount + outsideCount, TsConstants.LABEL.BY_COUNT));
 
-        outsideProject = record.get('PisNotInProjectStoryPoints');
-        total = record.get('TotalPoints');
-        chartPanel.add(this.getChart(outsideProject, total, TsConstants.LABEL.BY_POINTS));
+        var outsidePoints = record.get('OutsideStoryPoints');
+        var insidePoints = record.get('InsideStoryPoints');
+        summaryArea.add(this.getChart(outsidePoints, insidePoints + outsidePoints, TsConstants.LABEL.BY_POINTS));
+    },
 
-        this.down('#resultPanel').setLoading(false);
+    addDetails: function(record) {
+        var detailsArea = this.down('#' + TsConstants.ID.DETAILS_PANEL);
+        detailsArea.removeAll();
+        var self = this;
+
+        // Add the grid of outside stories
+        Ext.create('Rally.data.wsapi.TreeStoreBuilder').build({
+            model: 'HierarchicalRequirement',
+            context: {
+                project: null
+            },
+            fetch: TsConstants.FETCH.USER_STORY,
+            autoLoad: true,
+            enableHierarchy: false,
+            filters: record.get('OutsideStoriesFilter')
+        }).then({
+            scope: this,
+            success: function(store) {
+                detailsArea.add({
+                    xtype: 'panel',
+                    collapsible: true,
+                    layout: {
+                        type: 'vbox',
+                        align: 'stretch',
+                        padding: '0 5 5 5',
+                    },
+                    title: TsConstants.LABEL.OUTSIDE_PROJECT + ' (' + record.get('OutsideStoryCount') + ')',
+                    items: [{
+                        xtype: 'rallygridboard',
+                        height: self.getHeight() / 3,
+                        stateful: true,
+                        stateId: TsConstants.ID.OUTSIDE_STORY_GRID,
+                        gridConfig: {
+                            store: store,
+                            columnCfgs: TsConstants.SETTING.DEFAULT_DETAILS_FIELDS,
+                            enableRanking: false
+                        },
+                        plugins: [{
+                            ptype: 'rallygridboardfieldpicker',
+                            headerPosition: 'left',
+                            modelNames: ['HierarchicalRequirement'],
+                        }, ],
+                        listeners: {
+                            boxready: function(grid) {
+                                grid.setLoading(true);
+                            },
+                            load: function(grid) {
+                                grid.setLoading(false);
+                            }
+                        }
+                    }]
+                });
+            }
+        });
+
+        // Add the grid of inside stories
+        Ext.create('Rally.data.wsapi.TreeStoreBuilder').build({
+            model: 'HierarchicalRequirement',
+            context: {
+                project: null
+            },
+            fetch: TsConstants.FETCH.USER_STORY,
+            autoLoad: true,
+            enableHierarchy: false,
+            filters: record.get('InsideStoriesFilter')
+        }).then({
+            scope: this,
+            success: function(store) {
+                detailsArea.add({
+                    xtype: 'panel',
+                    collapsible: true,
+                    layout: {
+                        type: 'vbox',
+                        align: 'stretch',
+                        padding: '0 5 5 5',
+                    },
+                    title: TsConstants.LABEL.INSIDE_PROJECT + ' (' + record.get('InsideStoryCount') + ')',
+                    items: [{
+                        xtype: 'rallygridboard',
+                        height: self.getHeight() / 3,
+                        stateful: true,
+                        stateId: TsConstants.ID.INSIDE_STORY_GRID,
+                        gridConfig: {
+                            store: store,
+                            columnCfgs: TsConstants.SETTING.DEFAULT_DETAILS_FIELDS,
+                            enableRanking: false
+                        },
+                        plugins: [{
+                            ptype: 'rallygridboardfieldpicker',
+                            headerPosition: 'left',
+                            modelNames: ['HierarchicalRequirement'],
+                        }],
+                        listeners: {
+                            boxready: function(grid) {
+                                grid.setLoading(true);
+                            },
+                            load: function(grid) {
+                                grid.setLoading(false);
+                            }
+                        }
+                    }]
+                });
+            }
+        });
     },
 
     getChart: function(outside, total, title) {
