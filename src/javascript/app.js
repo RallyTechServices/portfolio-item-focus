@@ -288,7 +288,10 @@ Ext.define("CArABU.app.TSApp", {
                     borderColor: '#000000',
                     dataLabels: {
                         formatter: pointFormatter,
-                        //distance: -30
+                        //distance: -30,
+                        style: {
+                            width: '150px'
+                        }
                     },
                     data: [{
                         name: TsConstants.LABEL.INSIDE_PROJECT,
@@ -309,7 +312,7 @@ Ext.define("CArABU.app.TSApp", {
                 },
                 plotOptions: {
                     pie: {
-                        size: '75%',
+                        //size: '75%',
                     }
                 },
                 subtitle: {
