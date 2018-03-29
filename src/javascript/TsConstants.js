@@ -4,7 +4,12 @@ Ext.define("TsConstants", {
         ID: {
             SELECT_PROJECT_CONTROL: 'SELECT_PROJECT_CONTROL',
             SELECT_PI_TYPE_CONTROL: 'SELECT_ITEM_TYPE_CONTROL',
-            ITEM_SELECTOR_STATE: 'ITEM_SELECTOR_STATE'
+            ITEM_SELECTOR_STATE: 'ITEM_SELECTOR_STATE',
+            RESULTS_AREA: 'RESULTS_AREA',
+            SUMMARY_PANEL: 'SUMMARY_PANEL',
+            DETAILS_PANEL: 'DETAILS_PANEL',
+            OUTSIDE_STORY_GRID: 'OUTSIDE_STORY_GRID',
+            INSIDE_STORY_GRID: 'INSIDE_STORY_GRID'
         },
         LABEL: {
             PI_TYPE: 'Group by Owners of',
@@ -18,14 +23,24 @@ Ext.define("TsConstants", {
             OUTSIDE_PROJECT: 'Outside of Project Tree',
             BY_POINTS: 'Story Points',
             BY_COUNT: 'Story Count',
-            SELECT_ITEM: 'Select a project on the left...'
+            SELECT_ITEM: 'Select a project on the left...',
+            SUMMARY_PANEL: 'Summary',
+            DETAILS_PANEL: 'Details'
         },
         SETTING: {
             WARNING_THRESHOLD: 'WARNING_THRESHOLD',
+            DEFAULT_DETAILS_FIELDS: [
+                'FormattedID',
+                'Name',
+                'ScheduleState',
+                'Owner',
+                'Project',
+                'Feature'
+            ]
         },
         FETCH: {
             PI: ['Project', 'Name', 'ObjectId'],
-            USER_STORY: ['PlanEstimate']
+            USER_STORY: ['ObjectID', 'PlanEstimate'],
         },
         CHART: {
             WHITE: '#FFFFFF',
