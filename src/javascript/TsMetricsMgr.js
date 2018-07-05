@@ -11,9 +11,9 @@ Ext.define('TsMetricsMgr', function() {
      * Get stories assigned to PIs at the given piTypePath level
      * where the PI belongs to a project outside vs inside of the selected project tree.
      */
-    function updateFocus(project, piType) {
+    function updateFocus(project, piType, piTypePathMap) {
         if (project) {
-            var projectOid = project.get('ObjectID');
+            var projectOid = project.ObjectID;
             var piTypePath = piType.get('TypePath');
             return getDescendentProjects(projectOid)
                 .then(function(projects) {
@@ -22,38 +22,39 @@ Ext.define('TsMetricsMgr', function() {
                     });
                     var insideStoriesFilter = getLeafStoriesFilter()
                         .and(getProjectsFilter(projectOids, true))
-                        .and(getPiFilter(projectOids, piTypePath, true));
+                        .and(getPiFilter(projectOids, piTypePath, piTypePathMap, true));
                     var outsideStoriesFilter = getLeafStoriesFilter()
                         .and(getProjectsFilter(projectOids, true))
-                        .and(getPiFilter(projectOids, piTypePath, false));
+                        .and(getPiFilter(projectOids, piTypePath, piTypePathMap, false));
                     return Deft.Promise.all(
-                        [
-                            loadStories(insideStoriesFilter),
-                            loadStories(outsideStoriesFilter),
-                        ]).then(function(results) {
-                        var insideStories = results[0];
-                        var outsideStories = results[1];
+                            [
+                                loadStories(insideStoriesFilter),
+                                loadStories(outsideStoriesFilter),
+                            ])
+                        .then(function(results) {
+                            var insideStories = results[0];
+                            var outsideStories = results[1];
 
-                        var insideCount = insideStories.length;
-                        var insidePoints = _.reduce(insideStories, function(accumulator, story) {
-                            return accumulator += story.get('PlanEstimate');
-                        }, 0);
+                            var insideCount = insideStories.length;
+                            var insidePoints = _.reduce(insideStories, function(accumulator, story) {
+                                return accumulator += story.get('PlanEstimate');
+                            }, 0);
 
-                        var outsideCount = outsideStories.length;
-                        var outsidePoints = _.reduce(outsideStories, function(accumulator, story) {
-                            return accumulator += story.get('PlanEstimate');
-                        }, 0);
+                            var outsideCount = outsideStories.length;
+                            var outsidePoints = _.reduce(outsideStories, function(accumulator, story) {
+                                return accumulator += story.get('PlanEstimate');
+                            }, 0);
 
-                        var metrics = Ext.create('TsPiFocus', {
-                            InsideStoriesFilter: insideStoriesFilter,
-                            OutsideStoriesFilter: outsideStoriesFilter,
-                            OutsideStoryCount: outsideCount,
-                            OutsideStoryPoints: outsidePoints,
-                            InsideStoryCount: insideCount,
-                            InsideStoryPoints: insidePoints,
+                            var metrics = Ext.create('TsPiFocus', {
+                                InsideStoriesFilter: insideStoriesFilter,
+                                OutsideStoriesFilter: outsideStoriesFilter,
+                                OutsideStoryCount: outsideCount,
+                                OutsideStoryPoints: outsidePoints,
+                                InsideStoryCount: insideCount,
+                                InsideStoryPoints: insidePoints,
+                            });
+                            return metrics;
                         });
-                        TsUtils.updateRecord(project, metrics, TsPiFocus);
-                    });
                 });
         }
     }
@@ -112,12 +113,11 @@ Ext.define('TsMetricsMgr', function() {
     }
 
     // Only stories descendent from a PI that is owned (or now) by any of these projects
-    function getPiFilter(projectOids, piTypePath, inProjects) {
+    function getPiFilter(projectOids, piTypePath, piTypePathMap, inProjects) {
         var result;
-        var typePathMap = Rally.getApp().typePathMap;
         var queries = _.map(projectOids, function(oid) {
             return {
-                property: typePathMap[piTypePath] + '.Project.ObjectID',
+                property: piTypePathMap[piTypePath] + '.Project.ObjectID',
                 operator: inProjects ? '=' : '!=',
                 value: oid
             }

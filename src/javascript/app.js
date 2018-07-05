@@ -4,71 +4,51 @@ Ext.define("CArABU.app.TSApp", {
     componentCls: 'app',
     layout: 'border',
     items: [{
+        xtype: 'panel',
+        region: 'center',
+        itemId: TsConstants.ID.RESULTS_AREA,
+        autoScroll: true,
+        items: [{
             xtype: 'panel',
-            itemId: 'navigationPanel',
-            title: TsConstants.LABEL.SELECT_PROJECT,
-            padding: '0 0 10 0',
-            autoScroll: true,
-            bodyPadding: 5,
-            split: true,
-            width: "50%",
-            region: 'west',
-            items: [{
-                items: [{
-                    xtype: 'rallyprojecttree',
-                    itemId: TsConstants.ID.SELECT_PROJECT_CONTROL,
-                    stateful: true,
-                    stateId: TsConstants.ID.ITEM_SELECTOR_STATE,
-                }],
-            }]
-        },
-        {
-            xtype: 'panel',
-            region: 'center',
-            itemId: TsConstants.ID.RESULTS_AREA,
-            autoScroll: true,
+            itemId: TsConstants.ID.SELECT_PI_TYPE_CONTROL
+        }, {
+            xtype: 'tabpanel',
+            itemId: 'tabpanel',
             items: [{
                 xtype: 'panel',
-                itemId: TsConstants.ID.SELECT_PI_TYPE_CONTROL
-            }, {
-                xtype: 'tabpanel',
-                itemId: 'tabpanel',
+                itemId: TsConstants.ID.SUMMARY_PANEL,
+                title: TsConstants.LABEL.SUMMARY_PANEL,
+                autoScroll: true,
+                layout: 'vbox',
                 items: [{
                     xtype: 'panel',
-                    itemId: TsConstants.ID.SUMMARY_PANEL,
-                    title: TsConstants.LABEL.SUMMARY_PANEL,
-                    autoScroll: true,
-                    layout: 'vbox',
-                    items: [{
-                        xtype: 'panel',
-                        itemId: 'selectLabel',
-                        padding: '20 20 20 20',
-                        width: 200,
-                        border: false,
-                        html: TsConstants.LABEL.SELECT_ITEM
-                    }],
-                }, {
-                    xtype: 'panel',
-                    itemId: TsConstants.ID.DETAILS_PANEL,
-                    title: TsConstants.LABEL.DETAILS_PANEL,
-                    layout: {
-                        type: 'vbox',
-                        align: 'stretch'
-                    },
-                    autoScroll: true,
-                    items: [{
-                        xtype: 'panel',
-                        itemId: 'selectLabel',
-                        padding: '20 20 20 20',
-                        width: 200,
-                        border: false,
-                        html: TsConstants.LABEL.SELECT_ITEM
-                    }]
+                    itemId: 'selectLabel',
+                    padding: '20 20 20 20',
+                    width: 200,
+                    border: false,
+                    html: TsConstants.LABEL.SELECT_ITEM
                 }],
-                region: 'center',
-            }, ]
-        },
-    ],
+            }, {
+                xtype: 'panel',
+                itemId: TsConstants.ID.DETAILS_PANEL,
+                title: TsConstants.LABEL.DETAILS_PANEL,
+                layout: {
+                    type: 'vbox',
+                    align: 'stretch'
+                },
+                autoScroll: true,
+                items: [{
+                    xtype: 'panel',
+                    itemId: 'selectLabel',
+                    padding: '20 20 20 20',
+                    width: 200,
+                    border: false,
+                    html: TsConstants.LABEL.SELECT_ITEM
+                }]
+            }],
+            region: 'center',
+        }, ]
+    }, ],
 
     config: {
         defaultSettings: {
@@ -76,7 +56,6 @@ Ext.define("CArABU.app.TSApp", {
         }
     },
 
-    selectedProject: undefined,
     selectedPiType: undefined,
     availablePiTypes: [],
 
@@ -94,19 +73,6 @@ Ext.define("CArABU.app.TSApp", {
                 ready: this.onPiTypeReady,
             }
         });
-
-        // Setup event listeners
-        this.down('#' + TsConstants.ID.SELECT_PROJECT_CONTROL)
-            .on('itemselected', this.onProjectChange, this);
-
-    },
-
-    onProjectChange: function(item) {
-        var newValue = item.getRecord();
-        if (newValue != this.selectedProject) {
-            this.selectedProject = newValue;
-            this.updateMetrics();
-        }
     },
 
     onPiTypeReady: function(control) {
@@ -130,6 +96,7 @@ Ext.define("CArABU.app.TSApp", {
             this.typePathMap[typePath] = parentStr;
             parentStr += '.Parent';
         }
+        this.updateMetrics();
     },
 
     onPiTypeChange: function(control) {
@@ -142,17 +109,17 @@ Ext.define("CArABU.app.TSApp", {
         var summaryArea = this.down('#' + TsConstants.ID.SUMMARY_PANEL);
         var detailsArea = this.down('#' + TsConstants.ID.DETAILS_PANEL);
 
-        if (this.selectedProject && this.selectedPiType) {
+        if (this.selectedPiType && this.typePathMap) {
             summaryArea.removeAll();
             detailsArea.removeAll();
             resultsArea.setLoading(true);
 
-            TsMetricsMgr.updateFocus(this.selectedProject, this.selectedPiType)
+            TsMetricsMgr.updateFocus(this.getContext().get('project'), this.selectedPiType, this.typePathMap)
                 .then({
                     scope: this,
-                    success: function(result) {
-                        this.addCharts(this.selectedProject);
-                        this.addDetails(this.selectedProject);
+                    success: function(metrics) {
+                        this.addCharts(metrics);
+                        this.addDetails(metrics);
                         resultsArea.setLoading(false);
                     }
                 });

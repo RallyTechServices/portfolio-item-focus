@@ -3,7 +3,7 @@ Ext.define("TsUtils", function(TsUtils) {
     return {
         statics: {
             getParentQueries: getParentQueries,
-            updateRecord: updateRecord
+            //updateRecord: updateRecord
         }
     }
 
@@ -18,14 +18,15 @@ Ext.define("TsUtils", function(TsUtils) {
             }
         });
     }
-
-    function updateRecord(record, model) {
-        var fields = Ext.getClass(model).getFields();
-        _.forEach(fields, function(field) {
-            if (field.name != 'id') {
-                record.set(field.name, model.get(field.name));
-            }
-        });
-        return record;
-    }
+    /*
+        function updateRecord(record, model) {
+            var fields = Ext.getClass(model).getFields();
+            _.forEach(fields, function(field) {
+                if (field.name != 'id') {
+                    record.set(field.name, model.get(field.name));
+                }
+            });
+            return record;
+        }
+        */
 });

@@ -2,7 +2,6 @@
 Ext.define("TsConstants", {
     statics: {
         ID: {
-            SELECT_PROJECT_CONTROL: 'SELECT_PROJECT_CONTROL',
             SELECT_PI_TYPE_CONTROL: 'SELECT_ITEM_TYPE_CONTROL',
             ITEM_SELECTOR_STATE: 'ITEM_SELECTOR_STATE',
             RESULTS_AREA: 'RESULTS_AREA',
@@ -23,7 +22,7 @@ Ext.define("TsConstants", {
             OUTSIDE_PROJECT: 'Outside of Project Tree',
             BY_POINTS: 'Story Points',
             BY_COUNT: 'Story Count',
-            SELECT_ITEM: 'Select a project on the left...',
+            SELECT_ITEM: '',
             SUMMARY_PANEL: 'Summary',
             DETAILS_PANEL: 'Details'
         },
