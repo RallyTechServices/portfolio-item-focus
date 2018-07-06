@@ -1,7 +1,7 @@
 {
     "name": "portfolio-item-focus",
     "sdk": "2.1",
-    "version": "1.0.3-2",
+    "version": "1.0.4",
     "className": "CArABU.app.TSApp",
     "artifact": "",
     "javascript": [
