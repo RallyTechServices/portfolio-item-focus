@@ -2,29 +2,51 @@
 Ext.define("CArABU.app.TSApp", {
     extend: 'Rally.app.App',
     componentCls: 'app',
-    layout: 'border',
+    layout: {
+        type: 'vbox',
+        align: 'stretch'
+    },
     items: [{
         xtype: 'panel',
-        region: 'center',
-        itemId: TsConstants.ID.RESULTS_AREA,
-        autoScroll: true,
-        items: [{
-            xtype: 'panel',
-            itemId: TsConstants.ID.SELECT_PI_TYPE_CONTROL
-        }, {
+        itemId: TsConstants.ID.SELECT_PI_TYPE_CONTROL
+    }, ],
+
+    config: {
+        defaultSettings: {
+            WARNING_THRESHOLD: 80
+        }
+    },
+
+    selectedPiType: undefined,
+    availablePiTypes: [],
+
+    launch: function() {
+        this.add({
             xtype: 'tabpanel',
             itemId: 'tabpanel',
+            stateful: true,
+            stateId: this.getContext().getScopedStateId('tabs'),
+            listeners: {
+                scope: this,
+                tabchange: function(tabpanel) {
+                    //tabpanel.saveState();
+                }
+            },
             items: [{
                 xtype: 'panel',
                 itemId: TsConstants.ID.SUMMARY_PANEL,
                 title: TsConstants.LABEL.SUMMARY_PANEL,
                 autoScroll: true,
-                layout: 'vbox',
+                layout: {
+                    type: 'vbox',
+                    align: 'stretch'
+                },
                 items: [{
                     xtype: 'panel',
                     itemId: 'selectLabel',
                     padding: '20 20 20 20',
                     width: 200,
+                    height: 400,
                     border: false,
                     html: TsConstants.LABEL.SELECT_ITEM
                 }],
@@ -47,19 +69,8 @@ Ext.define("CArABU.app.TSApp", {
                 }]
             }],
             region: 'center',
-        }, ]
-    }, ],
+        });
 
-    config: {
-        defaultSettings: {
-            WARNING_THRESHOLD: 80
-        }
-    },
-
-    selectedPiType: undefined,
-    availablePiTypes: [],
-
-    launch: function() {
         this.down('#' + TsConstants.ID.SELECT_PI_TYPE_CONTROL).insert(0, {
             xtype: 'rallyportfolioitemtypecombobox',
             itemId: TsConstants.ID.SELECT_PI_TYPE_CONTROL,
@@ -105,14 +116,13 @@ Ext.define("CArABU.app.TSApp", {
     },
 
     updateMetrics: function() {
-        var resultsArea = this.down('#' + TsConstants.ID.RESULTS_AREA);
         var summaryArea = this.down('#' + TsConstants.ID.SUMMARY_PANEL);
         var detailsArea = this.down('#' + TsConstants.ID.DETAILS_PANEL);
 
         if (this.selectedPiType && this.typePathMap) {
             summaryArea.removeAll();
             detailsArea.removeAll();
-            resultsArea.setLoading(true);
+            this.setLoading(true);
 
             TsMetricsMgr.updateFocus(this.getContext().get('project'), this.selectedPiType, this.typePathMap)
                 .then({
@@ -120,7 +130,7 @@ Ext.define("CArABU.app.TSApp", {
                     success: function(metrics) {
                         this.addCharts(metrics);
                         this.addDetails(metrics);
-                        resultsArea.setLoading(false);
+                        this.setLoading(false);
                     }
                 });
         }
@@ -147,6 +157,9 @@ Ext.define("CArABU.app.TSApp", {
         // Workaround because rallytreegrid has zero height without explicit height setting
         var gridHeight = (appHeight - typePickerHeight - 80) / 2;
 
+        var outsideStoriesFilter = record.get('OutsideStoriesFilter');
+        var insideStoriesFilter = record.get('InsideStoriesFilter');
+
         // Add the grid of outside stories
         Ext.create('Rally.data.wsapi.TreeStoreBuilder').build({
             model: 'HierarchicalRequirement',
@@ -154,7 +167,7 @@ Ext.define("CArABU.app.TSApp", {
                 project: null
             },
             fetch: TsConstants.FETCH.USER_STORY,
-            autoLoad: true,
+            autoLoad: false, // Must be false otherwise the filter plugin doesn't have effect on app reload
             enableHierarchy: false,
             filters: record.get('OutsideStoriesFilter')
         }).then({
@@ -168,17 +181,16 @@ Ext.define("CArABU.app.TSApp", {
                         xtype: 'rallygridboard',
                         height: gridHeight,
                         stateful: true,
-                        stateId: TsConstants.ID.OUTSIDE_STORY_GRID,
+                        stateId: 'outside-grid',
                         gridConfig: {
                             store: store,
                             columnCfgs: TsConstants.SETTING.DEFAULT_DETAILS_FIELDS,
                             enableRanking: false
                         },
-                        plugins: [{
-                            ptype: 'rallygridboardfieldpicker',
-                            headerPosition: 'left',
-                            modelNames: ['HierarchicalRequirement'],
-                        }, ],
+                        storeConfig: {
+                            filters: outsideStoriesFilter,
+                        },
+                        plugins: this.getDetailsPlugins(TsConstants.ID.OUTSIDE_STORY_GRID),
                         listeners: {
                             boxready: function(grid) {
                                 grid.setLoading(true);
@@ -199,7 +211,7 @@ Ext.define("CArABU.app.TSApp", {
                 project: null
             },
             fetch: TsConstants.FETCH.USER_STORY,
-            autoLoad: true,
+            autoLoad: false,
             enableHierarchy: false,
             filters: record.get('InsideStoriesFilter')
         }).then({
@@ -213,17 +225,16 @@ Ext.define("CArABU.app.TSApp", {
                         xtype: 'rallygridboard',
                         height: gridHeight,
                         stateful: true,
-                        stateId: TsConstants.ID.INSIDE_STORY_GRID,
+                        stateId: 'inside-grid',
                         gridConfig: {
                             store: store,
                             columnCfgs: TsConstants.SETTING.DEFAULT_DETAILS_FIELDS,
                             enableRanking: false
                         },
-                        plugins: [{
-                            ptype: 'rallygridboardfieldpicker',
-                            headerPosition: 'left',
-                            modelNames: ['HierarchicalRequirement'],
-                        }],
+                        storeConfig: {
+                            filters: insideStoriesFilter,
+                        },
+                        plugins: this.getDetailsPlugins(TsConstants.ID.INSIDE_STORY_GRID),
                         listeners: {
                             boxready: function(grid) {
                                 grid.setLoading(true);
@@ -236,6 +247,34 @@ Ext.define("CArABU.app.TSApp", {
                 });
             }
         });
+    },
+
+    getDetailsPlugins: function(stateId) {
+        return [{
+                ptype: 'rallygridboardinlinefiltercontrol',
+                headerPosition: 'left',
+                inlineFilterButtonConfig: {
+                    modelNames: ['User Story'],
+                    filterChildren: true,
+                    stateful: true,
+                    stateId: this.getContext().getScopedStateId(stateId + '-filter'),
+                    context: this.getContext(),
+                    inlineFilterPanelConfig: {
+                        collapsed: true,
+                        quickFilterPanelConfig: {
+                            fieldNames: ['Owner']
+                        }
+                    }
+                }
+            },
+            {
+                ptype: 'rallygridboardfieldpicker',
+                headerPosition: 'left',
+                modelNames: ['HierarchicalRequirement'],
+                stateful: true,
+                stateId: this.getContext().getScopedStateId(stateId + '-fields'),
+            },
+        ]
     },
 
     getChart: function(outside, total, title) {
@@ -279,7 +318,7 @@ Ext.define("CArABU.app.TSApp", {
                 },
                 plotOptions: {
                     pie: {
-                        //size: '75%',
+                        size: '80%',
                     }
                 },
                 subtitle: {
