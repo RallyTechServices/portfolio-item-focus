@@ -8,7 +8,7 @@
 This app attempts to show how much of a project's work belongs to portfolio items
 that it doesn't control.
 
-The app fetches all leaf stories belonging to projects in the selected project 
+The app fetches all leaf stories belonging to projects in the current project 
 or its child projects.  It then charts the percentage of those stories that decended
 from portfolio items that are owned by the selected project (or its child projects)
 compared with portfolio items that are owned by other projects. The detailed lists

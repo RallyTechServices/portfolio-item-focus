@@ -1,13 +1,14 @@
 {
     "name": "portfolio-item-focus",
     "sdk": "2.1",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "className": "CArABU.app.TSApp",
     "artifact": "",
     "javascript": [
         "src/javascript/utils/__ts-info-link.js",
         "src/javascript/utils/__ts-logger.js",
         "src/javascript/utils/__ts-utilities.js",
+        "src/javascript/Overrides.js",
         "src/javascript/TsConstants.js",
         "src/javascript/TsUtils.js",
         "src/javascript/TsPiFocus.js",
