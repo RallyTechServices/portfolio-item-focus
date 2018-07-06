@@ -26,12 +26,6 @@ Ext.define("CArABU.app.TSApp", {
             itemId: 'tabpanel',
             stateful: true,
             stateId: this.getContext().getScopedStateId('tabs'),
-            listeners: {
-                scope: this,
-                tabchange: function(tabpanel) {
-                    //tabpanel.saveState();
-                }
-            },
             items: [{
                 xtype: 'panel',
                 itemId: TsConstants.ID.SUMMARY_PANEL,
